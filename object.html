@@ -7,28 +7,18 @@
         font-family: sans-serif;
         font-size: 14px;
       }
-
-      /* Main container stacks top row and bottom row vertically */
       #main-container {
         display: flex;
         flex-direction: column;
-        /* Allow the container to grow if needed, but don't force it */
-        /* width: auto; /* Or consider width: 100%; */
       }
-
-      /* Top row holds canvas and image side-by-side */
       #top-container {
         display: flex;
         flex-direction: row;
-        margin-bottom: 20px; /* Space between top row and sliders */
+        margin-bottom: 20px;
       }
-
-      /* Left item in top row */
       #webgl-content {
-        margin-right: 20px; /* Space between canvas and image */
+        margin-right: 20px;
       }
-
-      /* Right item in top row */
       #image-placeholder {
         width: 512px;
         height: 512px;
@@ -38,11 +28,7 @@
         align-items: center;
         color: #888;
       }
-
-      /* Bottom row (sliders) */
       #controls-wrapper {
-        /* REMOVED: width: 1044px; */
-        /* Now it will take the width available in #main-container */
         width: auto;
       }
 
@@ -50,33 +36,29 @@
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
-        /* MODIFIED: Changed from space-between to flex-start */
-        justify-content: flex-start; /* Align sliders to the start */
+
+        justify-content: flex-start;
         align-items: center;
         margin-bottom: 10px;
       }
 
       .slider-item {
-        margin-right: 20px; /* Increased space between sliders a bit */
-        margin-bottom: 5px; /* Add space if wrapping occurs */
+        margin-right: 20px;
+        margin-bottom: 5px;
       }
 
       .slider-item label {
         font-weight: bold;
         margin-right: 5px;
       }
-
-      /* Add this CSS rule */
       #image-placeholder img,
       #image-placeholder video {
-        /* This ensures the image/video will scale down to fit the parent container */
+
         max-width: 100%;
         max-height: 100%;
-        /* This setting maintains the image's original aspect ratio */
+
         object-fit: contain;
       }
-
-      /* MODIFIED: Right item in top row */
       #image-placeholder {
         width: 512px;
         height: 512px;
@@ -85,12 +67,20 @@
         justify-content: center;
         align-items: center;
         color: #888;
-        /* Ensure content doesn't overflow the fixed size */
+
         overflow: hidden;
       }
     </style>
   </head>
   <body>
+    <h1>Tugas 2 Grafika Komputer</h1>
+    <h2>Kelas: Grafika Komputer D</h2>
+    <h2>Anggota Kelompok:</h2>
+    <ul>
+      <li>5025231235 / Algof Kristian Zega</li>
+      <li>5025231275 / Muhammad Davin Aulia Risky</li>
+    </ul>
+
     <div id="main-container">
       <div id="webgl-content">
         <canvas id="gl-canvas" width="512" height="512"></canvas>
@@ -260,7 +250,23 @@
           muted
         ></video>
       </div>
-    </div>
+      <div id="image-placeholder">
+        <img
+          id="image2"
+          src="Reference/media/hierarchical-tree.jpg"
+          alt="hierarchical-tree"
+        />
+      </div>
+      <h2>Pembagian Tugas</h2>
+      <ul>
+        <li>
+          Algof Kristian Zega: Pembuatan objek pen holder, remote, spidol biru, spidol hijau, 
+          spidol hitam, spidol merah.
+        </li>
+        <li>
+          Muhammad Davin Aulia Risky: Pembuatan objek meja dan kaki meja, 
+          implementasi kontrol slider untuk manipulasi objek.
+        </li>
     <script id="vertex-shader" type="x-shader/x-vertex">
       #version 300 es
       in vec4 aPosition;
