@@ -11,6 +11,7 @@ var instanceMatrix;
 var modelViewMatrixLoc;
 var colorLoc;
 
+
 var baseHeight = 3.0;
 var baseWidth_bottom = 4.0;
 var baseWidth_top = 2.0;
@@ -48,9 +49,17 @@ function degrees(radians) {
   return (radians * 180) / Math.PI;
 }
 
+
 var baseId = 0;
 var tabletopId = 1;
-var numNodes = 2;
+var penHolderId = 2; 
+var remoteId = 3; 
+var markerRedId = 4; 
+var markerBlueId = 5; 
+var markerBlackId = 6; 
+var markerGreenId = 7; 
+
+var numNodes = 8; 
 var stack = [];
 var figure = [];
 
@@ -60,6 +69,7 @@ for (var i = 0; i < numNodes; i++)
 var vBuffer;
 var pointsArray = [];
 
+
 var isDragging = false;
 var lastMouseX = -1;
 var lastMouseY = -1;
@@ -67,6 +77,7 @@ var radius = 20.0;
 var theta = 0.0;
 var phi = 0.5;
 var sensitivity = 0.01;
+
 
 function createNode(transform, render, sibling, child) {
   var node = {
@@ -78,27 +89,84 @@ function createNode(transform, render, sibling, child) {
   return node;
 }
 
+
 function initNodes(Id) {
   var m = mat4();
   var D_pos = baseDepth / 2.0;
+  var t;
 
   switch (Id) {
     case baseId:
       m = rotate(-90, vec3(1, 0, 0));
+      
       figure[baseId] = createNode(m, baseRender, null, tabletopId);
       break;
 
     case tabletopId:
       var r = rotate(90, vec3(1, 0, 0));
-
       var railZ = -D_pos + w;
       var offsetZ = tabletopHeight / 2.0;
       var tabletopZ = railZ - offsetZ;
-
-      var t = translate(0, 0, tabletopZ);
+      t = translate(0, 0, tabletopZ);
 
       m = mult(t, r);
-      figure[tabletopId] = createNode(m, tabletopRender, null, null);
+      
+      figure[tabletopId] = createNode(m, tabletopRender, null, penHolderId);
+      break;
+
+    
+
+    case penHolderId:
+      
+      
+      t = translate(1.0, tabletopHeight / 2.0 + 0.5, 0.5);
+      
+      figure[penHolderId] = createNode(
+        t,
+        penHolderRender,
+        remoteId,
+        markerRedId
+      );
+      break;
+
+    case remoteId:
+      
+      t = translate(-1.0, tabletopHeight / 2.0 + 0.1, 0.5);
+      
+      figure[remoteId] = createNode(t, remoteRender, null, null);
+      break;
+
+    case markerRedId:
+      
+      
+      t = translate(0.1, 0.35, 0.1);
+      
+      figure[markerRedId] = createNode(t, markerRedRender, markerBlueId, null);
+      break;
+
+    case markerBlueId:
+      t = translate(-0.1, 0.35, 0.1);
+      figure[markerBlueId] = createNode(
+        t,
+        markerBlueRender,
+        markerBlackId,
+        null
+      );
+      break;
+
+    case markerBlackId:
+      t = translate(0.1, 0.35, -0.1);
+      figure[markerBlackId] = createNode(
+        t,
+        markerBlackRender,
+        markerGreenId,
+        null
+      );
+      break;
+
+    case markerGreenId:
+      t = translate(-0.1, 0.35, -0.1);
+      figure[markerGreenId] = createNode(t, markerGreenRender, null, null);
       break;
   }
 }
@@ -112,6 +180,7 @@ function traverse(Id) {
   modelViewMatrix = stack.pop();
   if (figure[Id].sibling != null) traverse(figure[Id].sibling);
 }
+
 
 function drawEdge(transformMatrix) {
   gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 0.0, 1.0));
@@ -191,10 +260,9 @@ function baseRender() {
 }
 
 function tabletopRender() {
-  gl.uniform4fv(colorLoc, vec4(0.92, 0.87, 0.78, 1.0));
+  gl.uniform4fv(colorLoc, vec4(0.92, 0.87, 0.78, 1.0)); 
 
   var tabletopWidth = baseWidth_top + 3.5;
-
   var tabletopDepth = baseHeight + 1.5;
 
   instanceMatrix = mult(
@@ -203,10 +271,61 @@ function tabletopRender() {
   );
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
 
+  
   for (var i = 0; i < 6; i++) {
     gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
   }
 }
+
+
+
+
+
+function penHolderRender() {
+  gl.uniform4fv(colorLoc, vec4(0.2, 0.2, 0.2, 1.0)); 
+  
+  instanceMatrix = mult(modelViewMatrix, scale(0.5, 1.0, 0.5));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
+function remoteRender() {
+  gl.uniform4fv(colorLoc, vec4(0.1, 0.1, 0.1, 1.0)); 
+  
+  instanceMatrix = mult(modelViewMatrix, scale(0.4, 0.2, 1.2));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
+function markerRedRender() {
+  gl.uniform4fv(colorLoc, vec4(1.0, 0.0, 0.0, 1.0)); 
+  
+  instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
+function markerBlueRender() {
+  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 1.0, 1.0)); 
+  instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
+function markerBlackRender() {
+  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 0.0, 1.0)); 
+  instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
+function markerGreenRender() {
+  gl.uniform4fv(colorLoc, vec4(0.0, 1.0, 0.0, 1.0)); 
+  instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
+  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+}
+
 
 function quad(vertexArray, a, b, c, d) {
   pointsArray.push(vertexArray[a]);
@@ -216,6 +335,7 @@ function quad(vertexArray, a, b, c, d) {
 }
 
 function createBeamGeometry() {
+  
   quad(beamVertices, 1, 0, 3, 2);
   quad(beamVertices, 2, 3, 7, 6);
   quad(beamVertices, 3, 0, 4, 7);
@@ -225,6 +345,7 @@ function createBeamGeometry() {
 }
 
 function createTabletopGeometry() {
+  
   quad(tabletopVertices, 1, 0, 3, 2);
   quad(tabletopVertices, 2, 3, 7, 6);
   quad(tabletopVertices, 3, 0, 4, 7);
@@ -232,6 +353,7 @@ function createTabletopGeometry() {
   quad(tabletopVertices, 4, 5, 6, 7);
   quad(tabletopVertices, 5, 4, 0, 1);
 }
+
 
 window.onload = function init() {
   canvas = document.getElementById("gl-canvas");
@@ -248,8 +370,9 @@ window.onload = function init() {
   program = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(program);
 
-  createBeamGeometry();
-  createTabletopGeometry();
+  
+  createBeamGeometry(); 
+  createTabletopGeometry(); 
 
   vBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -260,7 +383,6 @@ window.onload = function init() {
   gl.enableVertexAttribArray(positionLoc);
 
   modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
-
   colorLoc = gl.getUniformLocation(program, "uColor");
 
   projectionMatrix = perspective(45, canvas.width / canvas.height, 0.1, 100.0);
@@ -270,6 +392,7 @@ window.onload = function init() {
     flatten(projectionMatrix)
   );
 
+  
   canvas.onmousedown = function (event) {
     isDragging = true;
     lastMouseX = event.clientX;
@@ -297,10 +420,12 @@ window.onload = function init() {
     }
   };
 
+  
   for (var i = 0; i < numNodes; i++) initNodes(i);
 
   render();
 };
+
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -315,6 +440,7 @@ function render() {
     vec3(0, 1, 0)
   );
 
+  
   traverse(baseId);
 
   requestAnimationFrame(render);
