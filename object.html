@@ -1,16 +1,271 @@
 <!DOCTYPE html>
 <html>
-  <body>
-    <canvas id="gl-canvas" width="1024" height="1024"> </canvas>
+  <head>
+    <title>WebGL Table Object</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        font-size: 14px;
+      }
 
+      /* Main container stacks top row and bottom row vertically */
+      #main-container {
+        display: flex;
+        flex-direction: column;
+        /* Allow the container to grow if needed, but don't force it */
+        /* width: auto; /* Or consider width: 100%; */
+      }
+
+      /* Top row holds canvas and image side-by-side */
+      #top-container {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 20px; /* Space between top row and sliders */
+      }
+
+      /* Left item in top row */
+      #webgl-content {
+        margin-right: 20px; /* Space between canvas and image */
+      }
+
+      /* Right item in top row */
+      #image-placeholder {
+        width: 512px;
+        height: 512px;
+        border: 2px dashed #ccc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #888;
+      }
+
+      /* Bottom row (sliders) */
+      #controls-wrapper {
+        /* REMOVED: width: 1044px; */
+        /* Now it will take the width available in #main-container */
+        width: auto;
+      }
+
+      .slider-group {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        /* MODIFIED: Changed from space-between to flex-start */
+        justify-content: flex-start; /* Align sliders to the start */
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .slider-item {
+        margin-right: 20px; /* Increased space between sliders a bit */
+        margin-bottom: 5px; /* Add space if wrapping occurs */
+      }
+
+      .slider-item label {
+        font-weight: bold;
+        margin-right: 5px;
+      }
+
+      /* Add this CSS rule */
+      #image-placeholder img,
+      #image-placeholder video {
+        /* This ensures the image/video will scale down to fit the parent container */
+        max-width: 100%;
+        max-height: 100%;
+        /* This setting maintains the image's original aspect ratio */
+        object-fit: contain;
+      }
+
+      /* MODIFIED: Right item in top row */
+      #image-placeholder {
+        width: 512px;
+        height: 512px;
+        border: 2px dashed #ccc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #888;
+        /* Ensure content doesn't overflow the fixed size */
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main-container">
+      <div id="webgl-content">
+        <canvas id="gl-canvas" width="512" height="512"></canvas>
+
+        <div id="controls-wrapper">
+          <hr />
+          <h3>Table Controls</h3>
+          <div class="slider-group">
+            <span class="slider-item">
+              <label for="sliderTableTX">X:</label>
+              <input
+                id="sliderTableTX"
+                type="range"
+                min="-5"
+                max="5"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderTableTY">Y:</label>
+              <input
+                id="sliderTableTY"
+                type="range"
+                min="-5"
+                max="5"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderTableTZ">Z:</label>
+              <input
+                id="sliderTableTZ"
+                type="range"
+                min="-5"
+                max="5"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderTableRY">Rot Y:</label>
+              <input
+                id="sliderTableRY"
+                type="range"
+                min="-180"
+                max="180"
+                step="5"
+                value="0"
+              />
+            </span>
+          </div>
+
+          <hr />
+          <h3>Pen Holder Controls (Relative to Table)</h3>
+          <div class="slider-group">
+            <span class="slider-item">
+              <label for="sliderPenTX">X:</label>
+              <input
+                id="sliderPenTX"
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderPenTY">Y:</label>
+              <input
+                id="sliderPenTY"
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderPenTZ">Z:</label>
+              <input
+                id="sliderPenTZ"
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderPenRY">Rot Y:</label>
+              <input
+                id="sliderPenRY"
+                type="range"
+                min="-180"
+                max="180"
+                step="5"
+                value="0"
+              />
+            </span>
+          </div>
+
+          <hr />
+          <h3>Red Marker Controls (Relative to Pen Holder)</h3>
+          <div class="slider-group">
+            <span class="slider-item">
+              <label for="sliderMarkerTX">X:</label>
+              <input
+                id="sliderMarkerTX"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderMarkerTY">Y:</label>
+              <input
+                id="sliderMarkerTY"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderMarkerTZ">Z:</label>
+              <input
+                id="sliderMarkerTZ"
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value="0"
+              />
+            </span>
+            <span class="slider-item">
+              <label for="sliderMarkerRZ">Rot Z:</label>
+              <input
+                id="sliderMarkerRZ"
+                type="range"
+                min="-180"
+                max="180"
+                step="5"
+                value="0"
+              />
+            </span>
+          </div>
+          <hr />
+        </div>
+      </div>
+      <div id="image-placeholder">
+        <img
+          id="image"
+          src="Reference/media/depan-kanan.jpg"
+          alt="Tampak depan kanan"
+        />
+      </div>
+      <div id="image-placeholder">
+        <video
+          id="video"
+          src="Reference/media/keliling.mp4"
+          controls
+          muted
+        ></video>
+      </div>
+    </div>
     <script id="vertex-shader" type="x-shader/x-vertex">
       #version 300 es
-
       in vec4 aPosition;
-
       uniform mat4 modelViewMatrix;
       uniform mat4 projectionMatrix;
-
       void main()
       {
           gl_Position = projectionMatrix * modelViewMatrix * aPosition;
@@ -19,17 +274,15 @@
 
     <script id="fragment-shader" type="x-shader/x-fragment">
       #version 300 es
-
       precision mediump float;
-
-      uniform vec4 uColor; // NEW: Get color from JS
+      uniform vec4 uColor;
       out vec4 fColor;
-
       void main()
       {
-          fColor = uColor; // WAS: vec4(1.0, 0.0, 0.0, 1.0);
+          fColor = uColor;
       }
     </script>
+
     <script src="InitShaders.js"></script>
     <script src="MVnew.js"></script>
     <script src="object.js"></script>

@@ -11,7 +11,6 @@ var instanceMatrix;
 var modelViewMatrixLoc;
 var colorLoc;
 
-
 var baseHeight = 3.0;
 var baseWidth_bottom = 4.0;
 var baseWidth_top = 2.0;
@@ -38,28 +37,52 @@ var tabletopVertices = [
   vec4(-0.25, 0.5, 0.5, 1.0),
   vec4(0.25, 0.5, 0.5, 1.0),
   vec4(0.25, -0.5, 0.5, 1.0),
-
   vec4(-0.5, -0.5, -0.5, 1.0),
   vec4(-0.5, 0.5, -0.5, 1.0),
   vec4(0.5, 0.5, -0.5, 1.0),
   vec4(0.5, -0.5, -0.5, 1.0),
 ];
 
+var unitCubeVertices = [
+  vec4(-0.5, -0.5, 0.5, 1.0),
+  vec4(-0.5, 0.5, 0.5, 1.0),
+  vec4(0.5, 0.5, 0.5, 1.0),
+  vec4(0.5, -0.5, 0.5, 1.0),
+  vec4(-0.5, -0.5, -0.5, 1.0),
+  vec4(-0.5, 0.5, -0.5, 1.0),
+  vec4(0.5, 0.5, -0.5, 1.0),
+  vec4(0.5, -0.5, -0.5, 1.0),
+];
+
+var controls = {
+  tableTX: 0,
+  tableTY: 0,
+  tableTZ: 0,
+  tableRY: 0,
+  penTX: 0,
+  penTY: 0,
+  penTZ: 0,
+  penRY: 0,
+  markerTX: 0,
+  markerTY: 0,
+  markerTZ: 0,
+  markerRZ: 0,
+};
+
 function degrees(radians) {
   return (radians * 180) / Math.PI;
 }
 
-
 var baseId = 0;
 var tabletopId = 1;
-var penHolderId = 2; 
-var remoteId = 3; 
-var markerRedId = 4; 
-var markerBlueId = 5; 
-var markerBlackId = 6; 
-var markerGreenId = 7; 
+var penHolderId = 2;
+var remoteId = 3;
+var markerRedId = 4;
+var markerBlueId = 5;
+var markerBlackId = 6;
+var markerGreenId = 7;
 
-var numNodes = 8; 
+var numNodes = 8;
 var stack = [];
 var figure = [];
 
@@ -69,7 +92,6 @@ for (var i = 0; i < numNodes; i++)
 var vBuffer;
 var pointsArray = [];
 
-
 var isDragging = false;
 var lastMouseX = -1;
 var lastMouseY = -1;
@@ -77,7 +99,6 @@ var radius = 20.0;
 var theta = 0.0;
 var phi = 0.5;
 var sensitivity = 0.01;
-
 
 function createNode(transform, render, sibling, child) {
   var node = {
@@ -89,16 +110,23 @@ function createNode(transform, render, sibling, child) {
   return node;
 }
 
-
 function initNodes(Id) {
   var m = mat4();
   var D_pos = baseDepth / 2.0;
   var t;
 
+  var m_default, m_translate, m_rotate;
+
   switch (Id) {
     case baseId:
-      m = rotate(-90, vec3(1, 0, 0));
-      
+      m_default = rotate(-90, vec3(1, 0, 0));
+      m_translate = translate(
+        controls.tableTX,
+        controls.tableTY,
+        controls.tableTZ
+      );
+      m_rotate = rotate(controls.tableRY, vec3(0, 1, 0));
+      m = mult(m_translate, mult(m_rotate, m_default));
       figure[baseId] = createNode(m, baseRender, null, tabletopId);
       break;
 
@@ -108,21 +136,19 @@ function initNodes(Id) {
       var offsetZ = tabletopHeight / 2.0;
       var tabletopZ = railZ - offsetZ;
       t = translate(0, 0, tabletopZ);
-
       m = mult(t, r);
-      
       figure[tabletopId] = createNode(m, tabletopRender, null, penHolderId);
       break;
 
-    
-
     case penHolderId:
-      
-      
-      t = translate(1.0, tabletopHeight / 2.0 + 0.5, 0.5);
-      
+      m_default = translate(1.0, tabletopHeight / 2.0 + 0.5, 0.5);
+
+      m_translate = translate(controls.penTX, controls.penTY, controls.penTZ);
+      m_rotate = rotate(controls.penRY, vec3(0, 1, 0));
+      m = mult(m_default, mult(m_translate, m_rotate));
+
       figure[penHolderId] = createNode(
-        t,
+        m,
         penHolderRender,
         remoteId,
         markerRedId
@@ -130,18 +156,22 @@ function initNodes(Id) {
       break;
 
     case remoteId:
-      
       t = translate(-1.0, tabletopHeight / 2.0 + 0.1, 0.5);
-      
       figure[remoteId] = createNode(t, remoteRender, null, null);
       break;
 
     case markerRedId:
-      
-      
-      t = translate(0.1, 0.35, 0.1);
-      
-      figure[markerRedId] = createNode(t, markerRedRender, markerBlueId, null);
+      m_default = translate(0.1, 0.35, 0.1);
+
+      m_translate = translate(
+        controls.markerTX,
+        controls.markerTY,
+        controls.markerTZ
+      );
+      m_rotate = rotate(controls.markerRZ, vec3(0, 0, 1));
+      m = mult(m_default, mult(m_translate, m_rotate));
+
+      figure[markerRedId] = createNode(m, markerRedRender, markerBlueId, null);
       break;
 
     case markerBlueId:
@@ -181,11 +211,10 @@ function traverse(Id) {
   if (figure[Id].sibling != null) traverse(figure[Id].sibling);
 }
 
-
 function drawEdge(transformMatrix) {
   gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 0.0, 1.0));
-
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(transformMatrix));
+
   for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4 * i, 4);
 }
 
@@ -260,72 +289,61 @@ function baseRender() {
 }
 
 function tabletopRender() {
-  gl.uniform4fv(colorLoc, vec4(0.92, 0.87, 0.78, 1.0)); 
-
+  gl.uniform4fv(colorLoc, vec4(0.92, 0.87, 0.78, 1.0));
   var tabletopWidth = baseWidth_top + 3.5;
   var tabletopDepth = baseHeight + 1.5;
-
   instanceMatrix = mult(
     modelViewMatrix,
     scale(tabletopWidth, tabletopHeight, tabletopDepth)
   );
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
 
-  
   for (var i = 0; i < 6; i++) {
     gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
   }
 }
 
-
-
-
-
 function penHolderRender() {
-  gl.uniform4fv(colorLoc, vec4(0.2, 0.2, 0.2, 1.0)); 
-  
+  gl.uniform4fv(colorLoc, vec4(0.2, 0.2, 0.2, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.5, 1.0, 0.5));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
 
 function remoteRender() {
-  gl.uniform4fv(colorLoc, vec4(0.1, 0.1, 0.1, 1.0)); 
-  
+  gl.uniform4fv(colorLoc, vec4(0.1, 0.1, 0.1, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.4, 0.2, 1.2));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
 
 function markerRedRender() {
-  gl.uniform4fv(colorLoc, vec4(1.0, 0.0, 0.0, 1.0)); 
-  
+  gl.uniform4fv(colorLoc, vec4(1.0, 0.0, 0.0, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
 
 function markerBlueRender() {
-  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 1.0, 1.0)); 
+  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 1.0, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
 
 function markerBlackRender() {
-  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 0.0, 1.0)); 
+  gl.uniform4fv(colorLoc, vec4(0.0, 0.0, 0.0, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
 
 function markerGreenRender() {
-  gl.uniform4fv(colorLoc, vec4(0.0, 1.0, 0.0, 1.0)); 
+  gl.uniform4fv(colorLoc, vec4(0.0, 1.0, 0.0, 1.0));
   instanceMatrix = mult(modelViewMatrix, scale(0.1, 1.5, 0.1));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
-  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 24 + 4 * i, 4);
+  for (var i = 0; i < 6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 48 + 4 * i, 4);
 }
-
 
 function quad(vertexArray, a, b, c, d) {
   pointsArray.push(vertexArray[a]);
@@ -335,7 +353,6 @@ function quad(vertexArray, a, b, c, d) {
 }
 
 function createBeamGeometry() {
-  
   quad(beamVertices, 1, 0, 3, 2);
   quad(beamVertices, 2, 3, 7, 6);
   quad(beamVertices, 3, 0, 4, 7);
@@ -345,7 +362,6 @@ function createBeamGeometry() {
 }
 
 function createTabletopGeometry() {
-  
   quad(tabletopVertices, 1, 0, 3, 2);
   quad(tabletopVertices, 2, 3, 7, 6);
   quad(tabletopVertices, 3, 0, 4, 7);
@@ -354,6 +370,14 @@ function createTabletopGeometry() {
   quad(tabletopVertices, 5, 4, 0, 1);
 }
 
+function createCubeGeometry() {
+  quad(unitCubeVertices, 1, 0, 3, 2);
+  quad(unitCubeVertices, 2, 3, 7, 6);
+  quad(unitCubeVertices, 3, 0, 4, 7);
+  quad(unitCubeVertices, 6, 5, 1, 2);
+  quad(unitCubeVertices, 4, 5, 6, 7);
+  quad(unitCubeVertices, 5, 4, 0, 1);
+}
 
 window.onload = function init() {
   canvas = document.getElementById("gl-canvas");
@@ -370,9 +394,9 @@ window.onload = function init() {
   program = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(program);
 
-  
-  createBeamGeometry(); 
-  createTabletopGeometry(); 
+  createBeamGeometry();
+  createTabletopGeometry();
+  createCubeGeometry();
 
   vBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
@@ -392,7 +416,61 @@ window.onload = function init() {
     flatten(projectionMatrix)
   );
 
-  
+  function updateTransforms() {
+    for (var i = 0; i < numNodes; i++) initNodes(i);
+  }
+
+  document.getElementById("sliderTableTX").oninput = function (event) {
+    controls.tableTX = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderTableTY").oninput = function (event) {
+    controls.tableTY = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderTableTZ").oninput = function (event) {
+    controls.tableTZ = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderTableRY").oninput = function (event) {
+    controls.tableRY = parseFloat(event.target.value);
+    updateTransforms();
+  };
+
+  document.getElementById("sliderPenTX").oninput = function (event) {
+    controls.penTX = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderPenTY").oninput = function (event) {
+    controls.penTY = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderPenTZ").oninput = function (event) {
+    controls.penTZ = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderPenRY").oninput = function (event) {
+    controls.penRY = parseFloat(event.target.value);
+    updateTransforms();
+  };
+
+  document.getElementById("sliderMarkerTX").oninput = function (event) {
+    controls.markerTX = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderMarkerTY").oninput = function (event) {
+    controls.markerTY = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderMarkerTZ").oninput = function (event) {
+    controls.markerTZ = parseFloat(event.target.value);
+    updateTransforms();
+  };
+  document.getElementById("sliderMarkerRZ").oninput = function (event) {
+    controls.markerRZ = parseFloat(event.target.value);
+    updateTransforms();
+  };
+
   canvas.onmousedown = function (event) {
     isDragging = true;
     lastMouseX = event.clientX;
@@ -420,12 +498,10 @@ window.onload = function init() {
     }
   };
 
-  
   for (var i = 0; i < numNodes; i++) initNodes(i);
 
   render();
 };
-
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -440,7 +516,6 @@ function render() {
     vec3(0, 1, 0)
   );
 
-  
   traverse(baseId);
 
   requestAnimationFrame(render);
