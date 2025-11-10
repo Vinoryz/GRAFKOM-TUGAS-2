@@ -11,27 +11,30 @@ var instanceMatrix;
 var modelViewMatrixLoc;
 var colorLoc;
 
+// Ukuran-ukuran meja
 var baseHeight = 3.0;
 var baseWidth_bottom = 4.0;
 var baseWidth_top = 2.0;
 var baseDepth = 3.0;
-var edgeThickness = 0.1;
-var tabletopHeight = 0.2;
+var edgeThickness = 0.1; // Ketebalan kaki meja (frame besi)
+var tabletopHeight = 0.2; // Ketebalan papan meja
 
 var w = edgeThickness / 2.0;
 var h = 0.5;
 
+// Kerangka meja
 var beamVertices = [
   vec4(-w, -h, w, 1.0),
   vec4(-w, h, w, 1.0),
-  vec4(w, h, w, 1.0),
   vec4(w, -h, w, 1.0),
+  vec4(w, h, w, 1.0),
   vec4(-w, -h, -w, 1.0),
   vec4(-w, h, -w, 1.0),
-  vec4(w, h, -w, 1.0),
   vec4(w, -h, -w, 1.0),
+  vec4(w, h, -w, 1.0),
 ];
 
+// Papan meja
 var tabletopVertices = [
   vec4(-0.25, -0.5, 0.5, 1.0),
   vec4(-0.25, 0.5, 0.5, 1.0),
@@ -43,6 +46,7 @@ var tabletopVertices = [
   vec4(0.5, -0.5, -0.5, 1.0),
 ];
 
+// Objek yang menggunakan unit cube di atas meja
 var unitCubeVertices = [
   vec4(-0.5, -0.5, 0.5, 1.0),
   vec4(-0.5, 0.5, 0.5, 1.0),
@@ -54,6 +58,7 @@ var unitCubeVertices = [
   vec4(0.5, -0.5, -0.5, 1.0),
 ];
 
+// Variabel untuk menyimpan nilai kontrol dari slider
 var controls = {
   tableTX: 0,
   tableTY: 0,
@@ -69,10 +74,12 @@ var controls = {
   markerRZ: 0,
 };
 
+// Konversi radian ke derajat (digunakan untuk rotasi)
 function degrees(radians) {
   return (radians * 180) / Math.PI;
 }
 
+// Konstanta indeks
 var baseId = 0;
 var tabletopId = 1;
 var penHolderId = 2;
@@ -82,10 +89,11 @@ var markerBlueId = 5;
 var markerBlackId = 6;
 var markerGreenId = 7;
 
-var numNodes = 8;
+var numNodes = 8; // Jumlah objek (base, tabletop, penHolder, remote, markerRed, markerBlue, markerBlack, markerGreen)
 var stack = [];
 var figure = [];
 
+// inisiasi node
 for (var i = 0; i < numNodes; i++)
   figure[i] = createNode(null, null, null, null);
 
@@ -100,6 +108,7 @@ var theta = 0.0;
 var phi = 0.5;
 var sensitivity = 0.01;
 
+// Membuat objek untuk node
 function createNode(transform, render, sibling, child) {
   var node = {
     transform: transform,
@@ -503,6 +512,7 @@ window.onload = function init() {
   render();
 };
 
+// menghitung MV matrix dan menggambar objek
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
